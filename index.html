@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HENZ CLOSE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Pretendard:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #09090b; --card: #131316; --card2: #1a1a1f;
+    --border: #25252b; --text: #e4e4e7; --dim: #71717a; --muted: #3f3f46;
+    --green: #22c55e; --green-bg: #22c55e18;
+    --blue: #38bdf8; --blue-bg: #38bdf818;
+    --amber: #f59e0b; --amber-bg: #f59e0b18;
+    --red: #ef4444; --red-bg: #ef444418;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Pretendard', -apple-system, sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100dvh; padding-bottom:env(safe-area-inset-bottom,20px); }
+
+  /* ── HEADER ── */
+  .hdr {
+    position:sticky; top:0; z-index:50;
+    background:var(--bg); border-bottom:1px solid var(--border);
+    padding:12px 16px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .hdr-logo { font-family:var(--mono); font-weight:700; font-size:17px; letter-spacing:3px; color:var(--green); }
+  .hdr-logo span { color:var(--dim); font-weight:400; font-size:12px; margin-left:6px; letter-spacing:1px; }
+  .hdr-r { display:flex; gap:6px; }
+
+  /* ── STEP NAV ── */
+  .steps {
+    display:flex; padding:12px 16px 0; max-width:480px; margin:0 auto; gap:4px;
+  }
+  .step {
+    flex:1; text-align:center; padding:10px 0; border-radius:8px;
+    font-family:var(--mono); font-size:10px; letter-spacing:1px;
+    color:var(--muted); background:var(--card); border:1px solid var(--border);
+    cursor:pointer; transition:all .15s; position:relative;
+  }
+  .step.done { color:var(--green); border-color:var(--green)44; background:var(--green-bg); }
+  .step.active { color:var(--text); border-color:var(--dim); background:var(--card2); }
+  .step .step-num {
+    display:block; font-size:14px; font-weight:700; margin-bottom:1px;
+  }
+  .step.done .step-num { color:var(--green); }
+  .step.active .step-num { color:var(--text); }
+  .step-arrow { color:var(--muted); display:flex; align-items:center; font-size:14px; padding:0 2px; }
+
+  /* ── WRAP ── */
+  .wrap { max-width:480px; margin:0 auto; padding:12px; }
+
+  .pane { display:none; }
+  .pane.on { display:block; }
+
+  /* ── SEC ── */
+  .sec { background:var(--card); border:1px solid var(--border); border-radius:10px; margin-bottom:10px; overflow:hidden; }
+  .sec-h { padding:10px 14px; background:var(--card2); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .sec-t { font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:1.5px; color:var(--green); }
+  .sec-b { padding:12px 14px; }
+
+  /* ── INPUT ROWS ── */
+  .row { display:flex; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); }
+  .row:last-child { border-bottom:none; }
+  .row-label { font-size:13px; color:var(--dim); width:52px; flex-shrink:0; }
+  .row-input {
+    flex:1; text-align:right; font-family:var(--mono); font-size:18px; font-weight:600;
+    background:none; border:none; color:var(--text); outline:none; padding:4px 0;
+  }
+  .row-input::placeholder { color:var(--muted); }
+  .row-unit { font-family:var(--mono); font-size:12px; color:var(--dim); margin-left:4px; width:16px; }
+
+  /* ── TOTAL ── */
+  .total-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--green-bg); border-top:1px solid var(--green)33; }
+  .total-label { font-size:12px; font-weight:600; color:var(--green); }
+  .total-val { font-family:var(--mono); font-size:18px; font-weight:700; color:var(--green); }
+
+  .grand { background:var(--card); border:2px solid var(--green); border-radius:10px; padding:16px; text-align:center; margin-bottom:10px; }
+  .grand-label { font-size:11px; font-family:var(--mono); color:var(--dim); letter-spacing:2px; margin-bottom:4px; }
+  .grand-val { font-family:var(--mono); font-size:32px; font-weight:700; color:var(--green); }
+
+  /* ── ATTENDANCE ── */
+  .att-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .att-box { text-align:center; }
+  .att-box .att-label { font-size:11px; color:var(--dim); margin-bottom:4px; }
+  .att-box input {
+    width:100%; text-align:center; font-family:var(--mono); font-size:20px; font-weight:600;
+    background:var(--bg); border:1px solid var(--border); border-radius:6px;
+    color:var(--text); padding:8px 4px; outline:none;
+  }
+  .att-box input:focus { border-color:var(--green); }
+  .att-box .att-calc {
+    font-family:var(--mono); font-size:20px; font-weight:700; color:var(--blue);
+    background:var(--card2); border-radius:6px; padding:8px 4px; border:1px solid var(--border);
+  }
+
+  /* ── PHOTOS ── */
+  .photo-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .photo-slot {
+    width:72px; height:72px; border-radius:8px; border:2px dashed var(--border); background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; position:relative; overflow:hidden; flex-shrink:0;
+  }
+  .photo-slot:hover { border-color:var(--dim); }
+  .photo-slot.has { border-style:solid; border-color:var(--green); padding:0; }
+  .photo-slot .p-i { font-size:18px; }
+  .photo-slot .p-l { font-size:8px; color:var(--dim); margin-top:2px; font-family:var(--mono); }
+  .photo-slot.has .p-i,.photo-slot.has .p-l { display:none; }
+  .photo-slot img { width:100%; height:100%; object-fit:cover; }
+  .photo-slot .p-x {
+    position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%;
+    background:var(--red); color:#fff; font-size:10px;
+    display:none; align-items:center; justify-content:center; cursor:pointer; line-height:1;
+  }
+  .photo-slot.has .p-x { display:flex; }
+  .photo-slot input[type="file"] { display:none; }
+
+  /* ── OUTPUT ── */
+  .out-box {
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:14px; font-family:var(--mono); font-size:13px; line-height:1.7;
+    color:var(--text); white-space:pre-wrap; user-select:all; max-height:320px; overflow-y:auto;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-row { display:flex; gap:8px; margin-bottom:10px; }
+  .btn {
+    flex:1; font-family:var(--mono); font-size:13px; font-weight:600;
+    padding:12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--card); color:var(--text); cursor:pointer;
+    transition:all .15s; letter-spacing:.5px; text-align:center;
+  }
+  .btn:active { transform:scale(.97); }
+  .btn-g { background:var(--green); color:#000; border-color:var(--green); }
+  .btn-b { background:var(--blue); color:#000; border-color:var(--blue); }
+  .btn-a { background:var(--amber); color:#000; border-color:var(--amber); }
+  .btn-sm { padding:6px 12px; font-size:11px; flex:none; }
+  .btn-ol { background:none; }
+  .btn-next { font-size:14px; padding:14px; }
+
+  /* ── CHECKLIST ── */
+  .ck-item {
+    display:flex; align-items:center; gap:10px; padding:10px 0;
+    border-bottom:1px solid var(--border); cursor:pointer; user-select:none;
+  }
+  .ck-item:last-child { border-bottom:none; }
+  .ck-box {
+    width:24px; height:24px; border-radius:5px; border:2px solid var(--muted);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; font-size:13px; transition:all .15s;
+  }
+  .ck-item.done .ck-box { background:var(--green); border-color:var(--green); color:#000; }
+  .ck-item.issue .ck-box { background:var(--red-bg); border-color:var(--red); color:var(--red); }
+  .ck-txt { font-size:13px; flex:1; }
+  .ck-item.done .ck-txt { color:var(--dim); text-decoration:line-through; }
+  .ck-item.issue .ck-txt { color:var(--red); }
+  .ck-ib {
+    font-size:10px; font-family:var(--mono); padding:3px 8px;
+    border:1px solid var(--border); border-radius:3px;
+    background:none; color:var(--dim); cursor:pointer;
+  }
+  .ck-ib.on { border-color:var(--red); color:var(--red); background:var(--red-bg); }
+
+  .ck-bar { height:4px; background:var(--card2); border-radius:2px; overflow:hidden; margin-bottom:10px; }
+  .ck-bar-fill { height:100%; background:var(--green); transition:width .3s; border-radius:2px; }
+
+  /* ── MEMO ── */
+  .memo {
+    width:100%; min-height:60px; font-family:var(--sans); font-size:13px;
+    padding:10px; background:var(--bg); border:1px solid var(--border);
+    border-radius:6px; color:var(--text); outline:none; resize:vertical;
+  }
+  .memo:focus { border-color:var(--green); }
+
+  /* ── HIST ── */
+  .hist-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer;
+  }
+  .hist-item:last-child { border-bottom:none; }
+  .hist-date { font-family:var(--mono); font-size:13px; color:var(--green); }
+  .hist-amt { font-family:var(--mono); font-size:14px; font-weight:600; }
+  .hist-sub { font-size:11px; color:var(--dim); }
+
+  /* ── TOAST ── */
+  .toast {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(10px);
+    background:var(--green); color:#000; font-family:var(--mono); font-size:13px; font-weight:600;
+    padding:10px 20px; border-radius:8px; opacity:0; transition:all .3s;
+    z-index:999; pointer-events:none; white-space:nowrap;
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ── PHASE COLORS ── */
+  .phase-open .sec-t { color:var(--blue); }
+  .phase-open .total-row { background:var(--blue-bg); border-color:var(--blue)33; }
+  .phase-open .total-label,.phase-open .total-val { color:var(--blue); }
+  .phase-open .ck-item.done .ck-box { background:var(--blue); border-color:var(--blue); }
+  .phase-open .ck-bar-fill { background:var(--blue); }
+
+  .phase-close .sec-t { color:var(--amber); }
+  .phase-close .ck-item.done .ck-box { background:var(--amber); border-color:var(--amber); }
+  .phase-close .ck-bar-fill { background:var(--amber); }
+
+  input[type="number"]::-webkit-inner-spin-button { display:none; }
+  @media print { .hdr,.steps,.btn-row,.btn,.photo-row { display:none!important; } .out-box { max-height:none; } }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">HENZ<span>CLOSE</span></div>
+  <div class="hdr-r">
+    <button class="btn btn-sm btn-ol" onclick="showHist()">📚</button>
+    <button class="btn btn-sm btn-ol" onclick="toggleSettings()">⚙️</button>
+  </div>
+</div>
+
+<!-- SETTINGS OVERLAY -->
+<div class="pane" id="p-settings" style="max-width:480px;margin:0 auto;padding:12px;">
+  <div class="sec">
+    <div class="sec-h">
+      <div class="sec-t">⚙️ 설정</div>
+      <button class="btn btn-sm btn-ol" onclick="toggleSettings()">닫기</button>
+    </div>
+    <div class="sec-b">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:8px;">Google Sheets 웹앱 URL</div>
+      <input type="text" class="row-input" id="sheetUrl" placeholder="https://script.google.com/macros/s/..." style="text-align:left;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;width:100%;margin-bottom:8px;">
+      <button class="btn btn-sm" onclick="saveSettings()" style="width:100%;">저장</button>
+      <div style="font-size:11px;color:var(--dim);margin-top:10px;line-height:1.6;">
+        설정 방법:<br>
+        1. 구글 시트 열기 → 확장 프로그램 → Apps Script<br>
+        2. 제공된 코드 붙여넣기 → 배포 → 웹앱<br>
+        3. URL 복사해서 위에 붙여넣기
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+        <div style="font-size:12px;color:var(--amber);font-weight:600;margin-bottom:8px;">📦 기존 데이터 일괄 전송</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:8px;line-height:1.5;">
+          이 기기에 저장된 이전 정산 데이터를<br>구글시트로 한꺼번에 전송합니다.
+        </div>
+        <div id="bulkStatus" style="font-size:11px;color:var(--dim);margin-bottom:8px;"></div>
+        <button class="btn btn-sm" onclick="bulkSendClose()" style="width:100%;background:var(--amber);color:#000;font-weight:600;">이전 데이터 전송</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP NAV -->
+<div class="steps" id="stepNav">
+  <div class="step active" onclick="goStep(0)"><span class="step-num">1</span>오픈</div>
+  <div class="step-arrow">›</div>
+  <div class="step" onclick="goStep(1)"><span class="step-num">2</span>정산</div>
+  <div class="step-arrow">›</div>
+  <div class="step" onclick="goStep(2)"><span class="step-num">3</span>마감</div>
+</div>
+
+<div class="wrap">
+
+  <!-- ━━━ STEP 0: 오픈 체크리스트 ━━━ -->
+  <div class="pane on phase-open" id="p-0">
+
+    <div class="sec">
+      <div class="sec-b" style="padding:8px 14px;">
+        <div class="row" style="border:none;">
+          <div class="row-label" style="width:auto;margin-right:12px;">날짜</div>
+          <input type="date" class="row-input" id="bizDate" style="font-size:15px;" onchange="onDateChange()">
+        </div>
+      </div>
+    </div>
+
+    <div class="ck-bar"><div class="ck-bar-fill" id="ckBar0"></div></div>
+
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🪑 기본 세팅</div></div>
+      <div class="sec-b" id="ck0-setup"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🧹 공간 정리</div></div>
+      <div class="sec-b" id="ck0-space"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🚻 화장실</div></div>
+      <div class="sec-b" id="ck0-toilet"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">✨ 연출 / 분위기</div></div>
+      <div class="sec-b" id="ck0-vibe"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🚪 입구 / 동선</div></div>
+      <div class="sec-b" id="ck0-entrance"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🔊 장비 / 사운드</div></div>
+      <div class="sec-b" id="ck0-av"></div>
+    </div>
+
+    <!-- 시재 -->
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">💵 시작 시재</div></div>
+      <div class="sec-b">
+        <div class="row" style="border:none;">
+          <div class="row-label">입구</div>
+          <input type="text" class="row-input" id="cashStartDoor" inputmode="numeric" placeholder="0" oninput="fmt(this)">
+          <div class="row-unit">원</div>
+        </div>
+        <div class="row" style="border:none;">
+          <div class="row-label">바</div>
+          <input type="text" class="row-input" id="cashStartBar" inputmode="numeric" placeholder="0" oninput="fmt(this)">
+          <div class="row-unit">원</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-b"><textarea class="memo" id="memo0" placeholder="오픈 시 특이사항..."></textarea></div>
+    </div>
+
+    <button class="btn btn-b btn-next" onclick="goStep(1)" style="width:100%;margin-bottom:10px;">정산 입력으로 →</button>
+  </div>
+
+  <!-- ━━━ STEP 1: 마감 정산 ━━━ -->
+  <div class="pane" id="p-1">
+
+    <!-- 입구 -->
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🚪 입구</div></div>
+      <div class="sec-b">
+        <div class="row"><div class="row-label">카드</div><input type="text" class="row-input" id="doorCard" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="row-unit">원</div></div>
+        <div class="row"><div class="row-label">현금</div><input type="text" class="row-input" id="doorCash" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="row-unit">원</div></div>
+      </div>
+      <div class="total-row"><div class="total-label">입구 소계</div><div class="total-val" id="doorTotal">0원</div></div>
+    </div>
+
+    <!-- 바 -->
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🍸 바</div></div>
+      <div class="sec-b">
+        <div class="row"><div class="row-label">카드</div><input type="text" class="row-input" id="barCard" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="row-unit">원</div></div>
+        <div class="row"><div class="row-label">현금</div><input type="text" class="row-input" id="barCash" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="row-unit">원</div></div>
+      </div>
+      <div class="total-row"><div class="total-label">바 소계</div><div class="total-val" id="barTotal">0원</div></div>
+    </div>
+
+    <!-- 코트체크 -->
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🧥 코트체크</div></div>
+      <div class="sec-b">
+        <div class="row"><div class="row-label">카드</div><input type="text" class="row-input" id="coatCard" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="row-unit">원</div></div>
+      </div>
+      <div class="total-row"><div class="total-label">코트체크</div><div class="total-val" id="coatTotal">0원</div></div>
+    </div>
+
+    <!-- 총 -->
+    <div class="grand">
+      <div class="grand-label">TOTAL</div>
+      <div class="grand-val" id="grandTotal">0원</div>
+    </div>
+
+    <!-- 입장 -->
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">👥 입장</div></div>
+      <div class="sec-b">
+        <div class="att-grid">
+          <div class="att-box"><div class="att-label">유료</div><input type="text" id="attPaid" inputmode="numeric" placeholder="0" oninput="fmtA(this)"></div>
+          <div class="att-box"><div class="att-label">게스트</div><input type="text" id="attGuest" inputmode="numeric" placeholder="0" oninput="fmtA(this)"></div>
+          <div class="att-box"><div class="att-label">총</div><div class="att-calc" id="attTotal">0</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 영수증 -->
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">📸 영수증</div></div>
+      <div class="sec-b"><div class="photo-row" id="photoRow"></div></div>
+    </div>
+
+    <!-- 출력 -->
+    <div class="sec" id="sec-out">
+      <div class="sec-h"><div class="sec-t">📋 정산 결과</div><button class="btn btn-sm" onclick="copyTxt()">복사</button></div>
+      <div class="sec-b"><div class="out-box" id="outBox"></div></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ol" onclick="goStep(0)">← 오픈</button>
+      <button class="btn btn-a btn-next" onclick="goStep(2)">마감 체크로 →</button>
+    </div>
+  </div>
+
+  <!-- ━━━ STEP 2: 마감 체크리스트 ━━━ -->
+  <div class="pane phase-close" id="p-2">
+
+    <div class="ck-bar"><div class="ck-bar-fill" id="ckBar2"></div></div>
+
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🧹 청소 / 정리</div></div>
+      <div class="sec-b" id="ck2-clean"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🔒 보안 / 시설</div></div>
+      <div class="sec-b" id="ck2-secure"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">📝 마감 메모</div></div>
+      <div class="sec-b"><textarea class="memo" id="memo2" placeholder="수리 필요, 재고 부족, 특이사항..."></textarea></div>
+    </div>
+
+    <button class="btn btn-g btn-next" onclick="finalize()" style="width:100%;margin-bottom:8px;font-size:15px;">🏁 마감 완료 · 저장 + 복사</button>
+    <div class="btn-row">
+      <button class="btn" onclick="copyForSheet()">📊 시트용 복사</button>
+      <button class="btn" onclick="downloadCSV()">📁 CSV 다운</button>
+    </div>
+    <button class="btn btn-ol" onclick="goStep(1)" style="width:100%;margin-bottom:10px;">← 정산으로</button>
+  </div>
+
+  <!-- ━━━ 히스토리 (오버레이) ━━━ -->
+  <div class="pane" id="p-hist">
+    <div class="sec">
+      <div class="sec-h">
+        <div class="sec-t">📚 히스토리</div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm btn-ol" onclick="hideHist()">닫기</button>
+          <button class="btn btn-sm btn-ol" onclick="clearHist()" style="color:var(--red);border-color:var(--red);">전체삭제</button>
+        </div>
+      </div>
+      <div class="sec-b" id="histList"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='henz_close_v3';
+let curStep=0, photos=[], ck0={}, ck2={};
+
+// ── CHECKLIST DATA ──
+const CK0 = {
+  setup: [
+    '스탠딩 테이블 설치 (위치 균형 체크)',
+    '소파 테이블 세팅 (수량 / 청결 상태)',
+    '브앞 테이블 세팅',
+    '기둥 테이블 정리'
+  ],
+  space: [
+    '금요일 재고 정리 (입고 수량 이상 유무)',
+    '출입구 → 계단 → 홀 → 화장실 복도 쓸기',
+    '쓰레기통 비닐 교체 (입구 / 홀 / 화장실)'
+  ],
+  toilet: [
+    '휴지통 위치 정리',
+    '휴지 리필 (여유분 체크)',
+    '바닥 상태 체크 (물기 / 오염)'
+  ],
+  vibe: [
+    '향 피우기 (입구 → 홀 → VIP → 화장실)',
+    '스모그액 채우기 (잔량 확인)',
+    '스모그 전원 ON (오픈 5분전 채우기)',
+    '홀 조명 · 미러볼 ON',
+    '간판 조명 ON',
+    '에어컨 ON (상황에 따라)'
+  ],
+  entrance: [
+    '도어 오픈 준비 (입장 동선 정리 / 가드봉 설치)',
+    '포스터 부착 상태 확인 (입구 / 내부 문 / 화장실)',
+    '코트체크 공간 정리 (동선 확보)'
+  ],
+  av: [
+    '제습기 물 비우기 · 정리',
+    '콘솔 · DJ 장비 전원 ON',
+    '사운드 체크 (음악 / 마이크 / 튠 → 볼륨 기본값)',
+    '기둥 · VIP 스피커 상태 확인'
+  ]
+};
+
+const CK2 = {
+  clean: ['홀 바닥 청소','바 카운터 정리','테이블 정리','화장실 청소','쓰레기 배출','화장실 자동 방향제','남화 소변기 냄새 제거기'],
+  secure: ['전원 차단 (불필요 장비)','에어컨 / 제습기 OFF','가스 밸브 확인','출입문 잠금','CCTV 정상 작동','현금 / 귀중품 보관']
+};
+
+// ── INIT ──
+function init() {
+  const now = new Date();
+  let biz = new Date(now);
+  if (now.getHours() < 12) biz.setDate(biz.getDate()-1);
+  $('bizDate').value = ds(biz);
+
+  // init checklist states
+  let i=0; Object.values(CK0).flat().forEach(()=>{ck0[i++]=null;});
+  i=0; Object.values(CK2).flat().forEach(()=>{ck2[i++]=null;});
+
+  renderCk(0); renderCk(2); renderPhotos(); gen();
+}
+
+function ds(d){return d.getFullYear()+'-'+S(d.getMonth()+1)+'-'+S(d.getDate());}
+function S(n){return String(n).padStart(2,'0');}
+function $(id){return document.getElementById(id);}
+function p(s){return parseInt(String(s||'').replace(/[^0-9]/g,''))||0;}
+function f(n){return n.toLocaleString('ko-KR');}
+
+function onDateChange(){
+  const date=$('bizDate').value;
+  const hist=JSON.parse(localStorage.getItem(KEY)||'{}');
+  if(hist[date]){
+    loadEntry(date);
+    toast('저장된 데이터 불러옴');
+  } else {
+    ['doorCard','doorCash','barCard','barCash','coatCard','attPaid','attGuest','cashStartDoor','cashStartBar'].forEach(id=>$(id).value='');
+    photos=[];renderPhotos();
+    $('memo0').value='';$('memo2').value='';
+    let i=0;Object.values(CK0).flat().forEach(()=>{ck0[i++]=null;});
+    i=0;Object.values(CK2).flat().forEach(()=>{ck2[i++]=null;});
+    renderCk(0);renderCk(2);gen();
+  }
+}
+
+function fmt(el){
+  let r=el.value.replace(/[^0-9]/g,'');
+  el.value=r?parseInt(r).toLocaleString('ko-KR'):'';
+  gen();
+}
+function fmtA(el){el.value=el.value.replace(/[^0-9]/g,'');gen();}
+
+// ── STEP NAV ──
+function goStep(n) {
+  curStep=n;
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  $('p-'+n).classList.add('on');
+  // update step indicators
+  document.querySelectorAll('.step').forEach((s,i)=>{
+    s.classList.remove('active','done');
+    if(i<n) s.classList.add('done');
+    else if(i===n) s.classList.add('active');
+  });
+  if(n===1) gen();
+  window.scrollTo(0,0);
+}
+
+// ── CALC + GENERATE ──
+function gen(){
+  const dc=p($('doorCard').value), dca=p($('doorCash').value);
+  const bc=p($('barCard').value), bca=p($('barCash').value);
+  const cc=p($('coatCard').value);
+  const dStart=p($('cashStartDoor').value), bStart=p($('cashStartBar').value);
+  const dT=dc+dca-dStart, bT=bc+bca-bStart, cT=cc, grand=dT+bT+cT;
+  const paid=parseInt($('attPaid').value)||0;
+  const guest=parseInt($('attGuest').value)||0;
+  const total=paid+guest;
+
+  $('doorTotal').textContent=f(dT)+'원';
+  $('barTotal').textContent=f(bT)+'원';
+  $('coatTotal').textContent=f(cT)+'원';
+  $('grandTotal').textContent=f(grand)+'원';
+  $('attTotal').textContent=f(total);
+
+  const bd=$('bizDate').value;
+  let dt='';
+  if(bd){const[y,m,d]=bd.split('-');dt=`${parseInt(m)}월 ${parseInt(d)}일`;}
+
+  let t=dt+'\n';
+  t+='\n입구\n';
+  t+='카드 : '+f(dc)+'원\n';
+  t+='현금 : '+(dca?f(dca):'')+'원\n';
+  t+='\n바\n';
+  t+='카드 : '+f(bc)+'원\n';
+  t+='현금 : '+(bca?f(bca):'')+'원\n';
+  t+='\n코트체크\n';
+  t+='카드 : '+f(cc)+'원\n';
+  t+='현금 : 원\n';
+  t+='\n총 : '+f(grand)+'원\n';
+  t+='\n입장\n';
+  t+='유료 : '+paid+'명\n';
+  t+='게스트 : '+guest+'명\n';
+  t+='총 : '+total+'명';
+
+  $('outBox').textContent=t;
+}
+
+// ── COPY ──
+function copyTxt(){
+  navigator.clipboard.writeText($('outBox').textContent).then(()=>toast('복사 완료'));
+}
+
+// ── PHOTOS ──
+function renderPhotos(){
+  const row=$('photoRow');
+  row.innerHTML=photos.map((src,i)=>`
+    <div class="photo-slot has">
+      <img src="${src}">
+      <div class="p-x" onclick="event.stopPropagation();rmPhoto(${i})">✕</div>
+    </div>`).join('')+`
+    <div class="photo-slot" onclick="$('phIn').click()">
+      <div class="p-i">+</div><div class="p-l">추가</div>
+      <input type="file" accept="image/*" capture="environment" multiple id="phIn" onchange="onPh(this)">
+    </div>`;
+}
+
+function onPh(input){
+  if(!input.files)return;
+  Array.from(input.files).forEach(file=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const c=document.createElement('canvas');
+        const s=Math.min(1,600/img.width);
+        c.width=img.width*s;c.height=img.height*s;
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        photos.push(c.toDataURL('image/jpeg',.5));
+        renderPhotos();
+      };
+      img.src=e.target.result;
+    };
+    r.readAsDataURL(file);
+  });
+  input.value='';
+}
+
+function rmPhoto(i){photos.splice(i,1);renderPhotos();}
+
+// ── CHECKLIST ──
+function renderCk(phase){
+  const data=phase===0?CK0:CK2;
+  const state=phase===0?ck0:ck2;
+  const prefix=phase===0?'ck0':'ck2';
+  let idx=0;
+  Object.entries(data).forEach(([key,items])=>{
+    const el=$(prefix+'-'+key);
+    el.innerHTML=items.map(text=>{
+      const id=idx++;
+      const st=state[id];
+      const cls=st==='ok'?'done':st==='issue'?'issue':'';
+      const icon=st==='ok'?'✓':st==='issue'?'!':'';
+      const ib=st==='issue'?'on':'';
+      return `<div class="ck-item ${cls}" onclick="ckTog(${phase},${id})">
+        <div class="ck-box">${icon}</div>
+        <div class="ck-txt">${text}</div>
+        <button class="ck-ib ${ib}" onclick="event.stopPropagation();ckIs(${phase},${id})">이슈</button>
+      </div>`;
+    }).join('');
+    idx=idx; // continue counting
+  });
+  // progress
+  const all=Object.keys(state).length;
+  const done=Object.values(state).filter(v=>v).length;
+  const bar=$('ckBar'+phase);
+  if(bar){
+    bar.style.width=(all?done/all*100:0)+'%';
+    bar.style.background=Object.values(state).some(v=>v==='issue')?'var(--amber)':'';
+  }
+}
+
+function ckTog(ph,id){
+  const st=ph===0?ck0:ck2;
+  st[id]=st[id]==='ok'?null:'ok';
+  renderCk(ph);
+}
+function ckIs(ph,id){
+  const st=ph===0?ck0:ck2;
+  st[id]=st[id]==='issue'?null:'issue';
+  renderCk(ph);
+}
+
+function resetCheck(){
+  if(!confirm('체크리스트 초기화?'))return;
+  let i=0;Object.values(CK0).flat().forEach(()=>{ck0[i++]=null;});
+  i=0;Object.values(CK2).flat().forEach(()=>{ck2[i++]=null;});
+  $('memo0').value='';$('memo2').value='';
+  renderCk(0);renderCk(2);
+  toast('초기화');
+}
+
+// ── SETTINGS ──
+function toggleSettings(){
+  const el=$('p-settings');
+  const isOpen=el.classList.contains('on');
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  if(isOpen){ $('p-'+curStep).classList.add('on'); }
+  else{ el.classList.add('on'); $('sheetUrl').value=localStorage.getItem('henz_sheet_url')||''; }
+}
+function saveSettings(){
+  localStorage.setItem('henz_sheet_url',$('sheetUrl').value.trim());
+  toast('설정 저장됨');
+  toggleSettings();
+}
+
+// ── FINALIZE ──
+function finalize(){
+  gen();
+  copyTxt();
+  // build data
+  const data={
+    date:$('bizDate').value,
+    doorCard:$('doorCard').value, doorCash:$('doorCash').value,
+    barCard:$('barCard').value, barCash:$('barCash').value,
+    coatCard:$('coatCard').value,
+    attPaid:$('attPaid').value, attGuest:$('attGuest').value,
+    cashStartDoor:$('cashStartDoor').value, cashStartBar:$('cashStartBar').value,
+    photos, ck0:JSON.parse(JSON.stringify(ck0)), ck2:JSON.parse(JSON.stringify(ck2)),
+    ck0Items:Object.values(CK0).flat(), ck2Items:Object.values(CK2).flat(),
+    memo0:$('memo0').value, memo2:$('memo2').value,
+    savedAt:new Date().toISOString()
+  };
+  // local save
+  let hist=JSON.parse(localStorage.getItem(KEY)||'{}');
+  hist[data.date]=data;
+  localStorage.setItem(KEY,JSON.stringify(hist));
+  // google sheets
+  sendToSheet(data);
+  toast('🏁 마감 완료 · 저장 + 복사됨');
+}
+
+function sendToSheet(data){
+  const url=localStorage.getItem('henz_sheet_url');
+  if(!url){ return; }
+  const payload=Object.assign({},data);
+  delete payload.photos;
+  fetch(url,{
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).then(()=>{
+    toast('📊 구글시트 전송 완료');
+  }).catch(err=>{
+    console.error('Sheet error:',err);
+    toast('⚠️ 시트 전송 실패 (로컬은 저장됨)');
+  });
+}
+
+// ── BULK SEND (기존 데이터 일괄 전송) ──
+async function bulkSendClose(){
+  const url=localStorage.getItem('henz_sheet_url');
+  if(!url){ toast('⚠️ 먼저 Google Sheets URL을 설정하세요'); return; }
+  const hist=JSON.parse(localStorage.getItem(KEY)||'{}');
+  const dates=Object.keys(hist).sort();
+  if(!dates.length){ toast('저장된 데이터가 없습니다'); return; }
+  if(!confirm(dates.length+'건의 데이터를 구글시트로 전송합니다.\n계속하시겠습니까?')) return;
+  const st=$('bulkStatus');
+  let ok=0, fail=0;
+  for(let i=0;i<dates.length;i++){
+    st.textContent='전송 중... '+(i+1)+'/'+dates.length;
+    st.style.color='var(--amber)';
+    const d=hist[dates[i]];
+    const payload=Object.assign({},d);
+    delete payload.photos;
+    try{
+      await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      ok++;
+    }catch(e){ fail++; }
+    // 너무 빠르면 Apps Script 제한 걸림 — 0.5초 간격
+    await new Promise(r=>setTimeout(r,500));
+  }
+  st.textContent='✅ 완료: '+ok+'건 전송'+(fail?' / '+fail+'건 실패':'');
+  st.style.color='var(--green)';
+  toast('📦 '+ok+'건 전송 완료');
+}
+
+// ── SHEET COPY (탭 구분 → 구글시트에 Ctrl+V) ──
+function copyForSheet(){
+  gen();
+  const dc=p($('doorCard').value), dca=p($('doorCash').value);
+  const bc=p($('barCard').value), bca=p($('barCash').value);
+  const cc=p($('coatCard').value);
+  const dStart=p($('cashStartDoor').value), bStart=p($('cashStartBar').value);
+  const dT=dc+dca-dStart, bT=bc+bca-bStart, grand=dT+bT+cc;
+  const paid=parseInt($('attPaid').value)||0;
+  const guest=parseInt($('attGuest').value)||0;
+  const total=paid+guest;
+  const date=$('bizDate').value;
+  const memo0=$('memo0').value.replace(/\n/g,' ');
+  const memo2=$('memo2').value.replace(/\n/g,' ');
+
+  // 헤더 + 데이터 (탭 구분)
+  const header=['영업일자','입구카드','입구현금','입구시작시재','입구소계','바카드','바현금','바시작시재','바소계','코트체크','총매출','유료','게스트','총입장','오픈메모','마감메모'].join('\t');
+  const row=[date,dc,dca,dStart,dT,bc,bca,bStart,bT,cc,grand,paid,guest,total,memo0,memo2].join('\t');
+  const txt=header+'\n'+row;
+
+  navigator.clipboard.writeText(txt).then(()=>toast('📊 시트용 복사 완료 — 구글시트에 Ctrl+V'));
+}
+
+// ── CSV DOWNLOAD ──
+function downloadCSV(){
+  gen();
+  const dc=p($('doorCard').value), dca=p($('doorCash').value);
+  const bc=p($('barCard').value), bca=p($('barCash').value);
+  const cc=p($('coatCard').value);
+  const dStart=p($('cashStartDoor').value), bStart=p($('cashStartBar').value);
+  const dT=dc+dca-dStart, bT=bc+bca-bStart, grand=dT+bT+cc;
+  const paid=parseInt($('attPaid').value)||0;
+  const guest=parseInt($('attGuest').value)||0;
+  const total=paid+guest;
+  const date=$('bizDate').value;
+  const memo0='"'+($('memo0').value||'').replace(/"/g,'""')+'"';
+  const memo2='"'+($('memo2').value||'').replace(/"/g,'""')+'"';
+
+  const header='영업일자,입구카드,입구현금,입구시작시재,입구소계,바카드,바현금,바시작시재,바소계,코트체크,총매출,유료,게스트,총입장,오픈메모,마감메모';
+  const row=[date,dc,dca,dStart,dT,bc,bca,bStart,bT,cc,grand,paid,guest,total,memo0,memo2].join(',');
+  const csv='\uFEFF'+header+'\n'+row;
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='HENZ_정산_'+date+'.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('📁 CSV 다운로드 완료');
+}
+
+// ── HISTORY ──
+let histOpen=false;
+function showHist(){
+  histOpen=true;
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  $('p-hist').classList.add('on');
+  loadHist();
+}
+function hideHist(){
+  histOpen=false;
+  $('p-hist').classList.remove('on');
+  $('p-'+curStep).classList.add('on');
+}
+
+function loadHist(){
+  const hist=JSON.parse(localStorage.getItem(KEY)||'{}');
+  const keys=Object.keys(hist).sort().reverse();
+  const el=$('histList');
+  if(!keys.length){el.innerHTML='<div style="text-align:center;color:var(--dim);padding:20px;font-size:13px;">저장 내역 없음</div>';return;}
+  el.innerHTML=keys.map(k=>{
+    const d=hist[k];
+    const total=p(d.doorCard)+p(d.doorCash)+p(d.barCard)+p(d.barCash)+p(d.coatCard);
+    const att=(parseInt(d.attPaid)||0)+(parseInt(d.attGuest)||0);
+    return `<div class="hist-item" onclick="loadEntry('${k}')">
+      <div><div class="hist-date">${k}</div><div class="hist-sub">${att}명</div></div>
+      <div class="hist-amt">${f(total)}원</div>
+    </div>`;
+  }).join('');
+}
+
+function loadEntry(k){
+  const hist=JSON.parse(localStorage.getItem(KEY)||'{}');
+  const d=hist[k];if(!d)return;
+  $('bizDate').value=d.date||k;
+  $('doorCard').value=d.doorCard||'';$('doorCash').value=d.doorCash||'';
+  $('barCard').value=d.barCard||'';$('barCash').value=d.barCash||'';
+  $('coatCard').value=d.coatCard||'';
+  $('attPaid').value=d.attPaid||'';$('attGuest').value=d.attGuest||'';
+  $('cashStartDoor').value=d.cashStartDoor||'';$('cashStartBar').value=d.cashStartBar||'';
+  if(d.photos){photos=d.photos;renderPhotos();}
+  if(d.ck0){ck0=d.ck0;renderCk(0);}
+  if(d.ck2){ck2=d.ck2;renderCk(2);}
+  if(d.memo0)$('memo0').value=d.memo0;
+  if(d.memo2)$('memo2').value=d.memo2;
+  gen(); hideHist(); goStep(0);
+  toast('불러옴: '+k);
+}
+
+function clearHist(){
+  if(!confirm('전체 삭제?'))return;
+  localStorage.removeItem(KEY);loadHist();toast('삭제 완료');
+}
+
+// ── RESET ALL ──
+function resetAll(){
+  if(!confirm('전체 초기화?'))return;
+  ['doorCard','doorCash','barCard','barCash','coatCard','attPaid','attGuest','cashStartDoor','cashStartBar'].forEach(id=>$(id).value='');
+  photos=[];renderPhotos();
+  let i=0;Object.values(CK0).flat().forEach(()=>{ck0[i++]=null;});
+  i=0;Object.values(CK2).flat().forEach(()=>{ck2[i++]=null;});
+  $('memo0').value='';$('memo2').value='';
+  renderCk(0);renderCk(2);gen();toast('초기화 완료');
+}
+
+function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000);}
+
+init();
+</script>
+</body>
+</html>
