@@ -84,7 +84,8 @@
   .grand-val { font-family:var(--mono); font-size:32px; font-weight:700; color:var(--green); }
 
   /* ── ATTENDANCE ── */
-  .att-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .att-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .att-grid.three { grid-template-columns:1fr 1fr 1fr; }
   .att-box { text-align:center; }
   .att-box .att-label { font-size:11px; color:var(--dim); margin-bottom:4px; }
   .att-box input {
@@ -355,6 +356,15 @@
       <div class="total-row"><div class="total-label">코트체크</div><div class="total-val" id="coatTotal">0원</div></div>
     </div>
 
+    <!-- 이체 -->
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">🏦 이체</div></div>
+      <div class="sec-b">
+        <div class="row" style="border:none;"><div class="row-label">이체</div><input type="text" class="row-input" id="transferAmt" inputmode="numeric" placeholder="0" oninput="fmt(this)"><div class="row-unit">원</div></div>
+      </div>
+      <div class="total-row"><div class="total-label">이체 금액</div><div class="total-val" id="transferTotal">0원</div></div>
+    </div>
+
     <!-- 총 -->
     <div class="grand">
       <div class="grand-label">TOTAL</div>
@@ -367,6 +377,7 @@
       <div class="sec-b">
         <div class="att-grid">
           <div class="att-box"><div class="att-label">유료</div><input type="text" id="attPaid" inputmode="numeric" placeholder="0" oninput="fmtA(this)"></div>
+          <div class="att-box"><div class="att-label">유료게스트</div><input type="text" id="attPaidGuest" inputmode="numeric" placeholder="0" oninput="fmtA(this)"></div>
           <div class="att-box"><div class="att-label">게스트</div><input type="text" id="attGuest" inputmode="numeric" placeholder="0" oninput="fmtA(this)"></div>
           <div class="att-box"><div class="att-label">총</div><div class="att-calc" id="attTotal">0</div></div>
         </div>
@@ -511,7 +522,7 @@ function onDateChange(){
     loadEntry(date);
     toast('저장된 데이터 불러옴');
   } else {
-    ['doorCard','doorCash','barCard','barCash','coatCard','attPaid','attGuest','cashStartDoor','cashStartBar'].forEach(id=>$(id).value='');
+    ['doorCard','doorCash','barCard','barCash','coatCard','transferAmt','attPaid','attPaidGuest','attGuest','cashStartDoor','cashStartBar'].forEach(id=>$(id).value='');
     photos=[];renderPhotos();
     $('memo0').value='';$('memo2').value='';
     let i=0;Object.values(CK0).flat().forEach(()=>{ck0[i++]=null;});
@@ -547,15 +558,18 @@ function gen(){
   const dc=p($('doorCard').value), dca=p($('doorCash').value);
   const bc=p($('barCard').value), bca=p($('barCash').value);
   const cc=p($('coatCard').value);
+  const tr=p($('transferAmt').value);
   const dStart=p($('cashStartDoor').value), bStart=p($('cashStartBar').value);
-  const dT=dc+dca-dStart, bT=bc+bca-bStart, cT=cc, grand=dT+bT+cT;
+  const dT=dc+dca-dStart, bT=bc+bca-bStart, cT=cc, grand=dT+bT+cT+tr;
   const paid=parseInt($('attPaid').value)||0;
+  const paidGuest=parseInt($('attPaidGuest').value)||0;
   const guest=parseInt($('attGuest').value)||0;
-  const total=paid+guest;
+  const total=paid+paidGuest+guest;
 
   $('doorTotal').textContent=f(dT)+'원';
   $('barTotal').textContent=f(bT)+'원';
   $('coatTotal').textContent=f(cT)+'원';
+  $('transferTotal').textContent=f(tr)+'원';
   $('grandTotal').textContent=f(grand)+'원';
   $('attTotal').textContent=f(total);
 
@@ -573,9 +587,11 @@ function gen(){
   t+='\n코트체크\n';
   t+='카드 : '+f(cc)+'원\n';
   t+='현금 : 원\n';
+  if(tr){t+='\n이체 : '+f(tr)+'원\n';}
   t+='\n총 : '+f(grand)+'원\n';
   t+='\n입장\n';
   t+='유료 : '+paid+'명\n';
+  if(paidGuest){t+='유료게스트 : '+paidGuest+'명\n';}
   t+='게스트 : '+guest+'명\n';
   t+='총 : '+total+'명';
 
@@ -699,8 +715,8 @@ function finalize(){
     date:$('bizDate').value,
     doorCard:$('doorCard').value, doorCash:$('doorCash').value,
     barCard:$('barCard').value, barCash:$('barCash').value,
-    coatCard:$('coatCard').value,
-    attPaid:$('attPaid').value, attGuest:$('attGuest').value,
+    coatCard:$('coatCard').value, transferAmt:$('transferAmt').value,
+    attPaid:$('attPaid').value, attPaidGuest:$('attPaidGuest').value, attGuest:$('attGuest').value,
     cashStartDoor:$('cashStartDoor').value, cashStartBar:$('cashStartBar').value,
     photos, ck0:JSON.parse(JSON.stringify(ck0)), ck2:JSON.parse(JSON.stringify(ck2)),
     ck0Items:Object.values(CK0).flat(), ck2Items:Object.values(CK2).flat(),
@@ -767,18 +783,20 @@ function copyForSheet(){
   const dc=p($('doorCard').value), dca=p($('doorCash').value);
   const bc=p($('barCard').value), bca=p($('barCash').value);
   const cc=p($('coatCard').value);
+  const tr=p($('transferAmt').value);
   const dStart=p($('cashStartDoor').value), bStart=p($('cashStartBar').value);
-  const dT=dc+dca-dStart, bT=bc+bca-bStart, grand=dT+bT+cc;
+  const dT=dc+dca-dStart, bT=bc+bca-bStart, grand=dT+bT+cc+tr;
   const paid=parseInt($('attPaid').value)||0;
+  const paidGuest=parseInt($('attPaidGuest').value)||0;
   const guest=parseInt($('attGuest').value)||0;
-  const total=paid+guest;
+  const total=paid+paidGuest+guest;
   const date=$('bizDate').value;
   const memo0=$('memo0').value.replace(/\n/g,' ');
   const memo2=$('memo2').value.replace(/\n/g,' ');
 
   // 헤더 + 데이터 (탭 구분)
-  const header=['영업일자','입구카드','입구현금','입구시작시재','입구소계','바카드','바현금','바시작시재','바소계','코트체크','총매출','유료','게스트','총입장','오픈메모','마감메모'].join('\t');
-  const row=[date,dc,dca,dStart,dT,bc,bca,bStart,bT,cc,grand,paid,guest,total,memo0,memo2].join('\t');
+  const header=['영업일자','입구카드','입구현금','입구시작시재','입구소계','바카드','바현금','바시작시재','바소계','코트체크','이체','총매출','유료','유료게스트','게스트','총입장','오픈메모','마감메모'].join('\t');
+  const row=[date,dc,dca,dStart,dT,bc,bca,bStart,bT,cc,tr,grand,paid,paidGuest,guest,total,memo0,memo2].join('\t');
   const txt=header+'\n'+row;
 
   navigator.clipboard.writeText(txt).then(()=>toast('📊 시트용 복사 완료 — 구글시트에 Ctrl+V'));
@@ -790,17 +808,19 @@ function downloadCSV(){
   const dc=p($('doorCard').value), dca=p($('doorCash').value);
   const bc=p($('barCard').value), bca=p($('barCash').value);
   const cc=p($('coatCard').value);
+  const tr=p($('transferAmt').value);
   const dStart=p($('cashStartDoor').value), bStart=p($('cashStartBar').value);
-  const dT=dc+dca-dStart, bT=bc+bca-bStart, grand=dT+bT+cc;
+  const dT=dc+dca-dStart, bT=bc+bca-bStart, grand=dT+bT+cc+tr;
   const paid=parseInt($('attPaid').value)||0;
+  const paidGuest=parseInt($('attPaidGuest').value)||0;
   const guest=parseInt($('attGuest').value)||0;
-  const total=paid+guest;
+  const total=paid+paidGuest+guest;
   const date=$('bizDate').value;
   const memo0='"'+($('memo0').value||'').replace(/"/g,'""')+'"';
   const memo2='"'+($('memo2').value||'').replace(/"/g,'""')+'"';
 
-  const header='영업일자,입구카드,입구현금,입구시작시재,입구소계,바카드,바현금,바시작시재,바소계,코트체크,총매출,유료,게스트,총입장,오픈메모,마감메모';
-  const row=[date,dc,dca,dStart,dT,bc,bca,bStart,bT,cc,grand,paid,guest,total,memo0,memo2].join(',');
+  const header='영업일자,입구카드,입구현금,입구시작시재,입구소계,바카드,바현금,바시작시재,바소계,코트체크,이체,총매출,유료,유료게스트,게스트,총입장,오픈메모,마감메모';
+  const row=[date,dc,dca,dStart,dT,bc,bca,bStart,bT,cc,tr,grand,paid,paidGuest,guest,total,memo0,memo2].join(',');
   const csv='\uFEFF'+header+'\n'+row;
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
@@ -846,8 +866,8 @@ function loadEntry(k){
   $('bizDate').value=d.date||k;
   $('doorCard').value=d.doorCard||'';$('doorCash').value=d.doorCash||'';
   $('barCard').value=d.barCard||'';$('barCash').value=d.barCash||'';
-  $('coatCard').value=d.coatCard||'';
-  $('attPaid').value=d.attPaid||'';$('attGuest').value=d.attGuest||'';
+  $('coatCard').value=d.coatCard||'';$('transferAmt').value=d.transferAmt||'';
+  $('attPaid').value=d.attPaid||'';$('attPaidGuest').value=d.attPaidGuest||'';$('attGuest').value=d.attGuest||'';
   $('cashStartDoor').value=d.cashStartDoor||'';$('cashStartBar').value=d.cashStartBar||'';
   if(d.photos){photos=d.photos;renderPhotos();}
   if(d.ck0){ck0=d.ck0;renderCk(0);}
@@ -866,7 +886,7 @@ function clearHist(){
 // ── RESET ALL ──
 function resetAll(){
   if(!confirm('전체 초기화?'))return;
-  ['doorCard','doorCash','barCard','barCash','coatCard','attPaid','attGuest','cashStartDoor','cashStartBar'].forEach(id=>$(id).value='');
+  ['doorCard','doorCash','barCard','barCash','coatCard','transferAmt','attPaid','attPaidGuest','attGuest','cashStartDoor','cashStartBar'].forEach(id=>$(id).value='');
   photos=[];renderPhotos();
   let i=0;Object.values(CK0).flat().forEach(()=>{ck0[i++]=null;});
   i=0;Object.values(CK2).flat().forEach(()=>{ck2[i++]=null;});
